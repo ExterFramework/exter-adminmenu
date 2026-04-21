@@ -1,11 +1,15 @@
-QBCore, LoggedIn = exports['qb-core']:GetCoreObject(), false, false
+LoggedIn = false
 
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    QBCore.Functions.TriggerCallback('exter-adminmenumenu/server/get-permission', function(pGroup) 
+local function handlePlayerLoaded()
+    QBCore.Functions.TriggerCallback('exter-adminmenumenu/server/get-permission', function(pGroup)
         Group = pGroup
     end)
     Citizen.Wait(250)
     InitAdminMenu()
+end
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    handlePlayerLoaded()
     -- exports[GetCurrentResourceName()]:CreateLog('Logged In', 'Player Logged In')
 end)
 
@@ -15,6 +19,10 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     end)
     -- exports[GetCurrentResourceName()]:CreateLog('Logged Out', 'Player Logged Out')
     LoggedIn = false
+end)
+
+RegisterNetEvent('esx:playerLoaded', function()
+    handlePlayerLoaded()
 end)
 
 -- [ Code ] --
@@ -34,11 +42,6 @@ RegisterNetEvent("exter-adminmenu/client/reset-menu", function()
     if not IsPlayerAdmin() then return end
     ResetMenuKvp()
     TriggerEvent('exter-adminmenu/client/force-close')
-end)
-RegisterNetEvent("hasib:additem", function(ItemName,ItemAmount)
-   TriggerServerEvent('jomidar:additem',ItemName,ItemAmount)
-   print(ItemName)
-   print(ItemAmount)
 end)
 RegisterNetEvent("exter-adminmenu/client/force-close", function()
     SendNUIMessage({ Action = 'Close', })

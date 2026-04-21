@@ -1,5 +1,3 @@
-QBCore = exports['qb-core']:GetCoreObject()
-
 -- [ Code ] --
 
 -- [ Commands ] --
@@ -32,7 +30,12 @@ end, 'god')
 
 QBCore.Commands.Add(Config.Commands['ReportNew'], Lang:t("info.send_report"), {{name = "message", help = Lang:t('info.message')}}, false, function(source, args)
     local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return end
     local Message = table.concat(args, ' ')
+    local playerName = GetPlayerName(source)
+    if Config.Framework ~= 'esx' and Player.PlayerData and Player.PlayerData.name then
+        playerName = Player.PlayerData.name
+    end
     if Message ~= nil then
         local ReportData = {
             ['Id'] = math.random(111111, 999999),
@@ -41,7 +44,7 @@ QBCore.Commands.Add(Config.Commands['ReportNew'], Lang:t("info.send_report"), {{
                 {
                     ['Message'] = Message,
                     ['Time'] = CalculateTimeToDisplay(),
-                    ['Sender'] = Player.PlayerData.name,
+                    ['Sender'] = playerName,
                 }
             },
         }
@@ -76,7 +79,11 @@ RegisterCommand(Config.Commands['APAddItem'], function(source, args, rawCommand)
         local ServerId, ItemName, ItemAmount = tonumber(args[1]), tostring(args[2]), tonumber(args[3])
         local Player = QBCore.Functions.GetPlayer(ServerId)
         if Player ~= nil then
-            Player.Functions.AddItem(ItemName, ItemAmount, false, false)
+            if Config.Framework == 'esx' then
+                Player.addInventoryItem(ItemName, ItemAmount)
+            else
+                Player.Functions.AddItem(ItemName, ItemAmount, false, false)
+            end
             print(Lang:t('info.gaveitem', {amount = ItemAmount, name = ItemName}))
         end
     end
@@ -87,7 +94,11 @@ RegisterCommand(Config.Commands['APAddMoney'], function(source, args, rawCommand
         local ServerId, Amount = tonumber(args[1]), tonumber(args[2])
         local Player = QBCore.Functions.GetPlayer(ServerId)
         if Player ~= nil then
-            Player.Functions.AddMoney('cash', Amount)
+            if Config.Framework == 'esx' then
+                Player.addAccountMoney('money', Amount)
+            else
+                Player.Functions.AddMoney('cash', Amount)
+            end
             print(Lang:t('info.gavemoney', {amount = Amount, moneytype = 'Cash'}))
         end
     end
@@ -98,7 +109,11 @@ RegisterCommand(Config.Commands['APSetJob'], function(source, args, rawCommand)
         local ServerId, JobName, Grade = tonumber(args[1]), tostring(args[2]), tonumber(args[3])
         local Player = QBCore.Functions.GetPlayer(ServerId)
         if Player ~= nil then
-            Player.Functions.SetJob(JobName, Grade)
+            if Config.Framework == 'esx' then
+                Player.setJob(JobName, Grade)
+            else
+                Player.Functions.SetJob(JobName, Grade)
+            end
             print(Lang:t('info.setjob', {jobname = JobName}))
         end
     end
