@@ -7,16 +7,13 @@ description 'Admin Menu'
 ui_page "nui/index.html"
 
 shared_scripts {
+    'shared/sh_framework.lua',
     'shared/sh_config.lua',
     'locale.lua',
     'locales/en.lua', -- Change this to your desired language.
 }
 
 client_scripts {
-    '@qb-core/shared/items.lua',
-    '@qb-core/shared/gangs.lua',
-    '@qb-core/shared/jobs.lua',
-    '@qb-core/shared/vehicles.lua',
     'client/**/cl_*.lua',
     'shared/sh_commands.lua',
 }
@@ -46,8 +43,7 @@ server_exports {
 } 
 
 dependencies {
-    'oxmysql',
-    'qb-core'
+    'oxmysql'
 }
 
 lua54 'yes'

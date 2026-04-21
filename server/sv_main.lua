@@ -93,14 +93,24 @@ QBCore.Functions.CreateCallback('exter-adminmenu/server/get-player-data', functi
         TPlayer = GetPlayerFromIdentifier('steam', Identifier)
     end
     if TPlayer ~= nil then
-        local Steam = QBCore.Functions.GetIdentifier(TPlayer.PlayerData.source, "steam")
-        PlayerInfo = {
-            Name = TPlayer.PlayerData.name,
-            Steam = Steam ~= nil and Steam or 'Not found',
-            CharName = TPlayer.PlayerData.charinfo.firstname..' '..TPlayer.PlayerData.charinfo.lastname,
-            Source = TPlayer.PlayerData.source,
-            CitizenId = TPlayer.PlayerData.citizenid
-        }
+        if Config.Framework == 'esx' then
+            PlayerInfo = {
+                Name = GetPlayerName(TPlayer.source),
+                Steam = QBCore.Functions.GetIdentifier(TPlayer.source, "steam") or 'Not found',
+                CharName = GetPlayerName(TPlayer.source),
+                Source = TPlayer.source,
+                CitizenId = TPlayer.identifier
+            }
+        else
+            local Steam = QBCore.Functions.GetIdentifier(TPlayer.PlayerData.source, "steam")
+            PlayerInfo = {
+                Name = TPlayer.PlayerData.name,
+                Steam = Steam ~= nil and Steam or 'Not found',
+                CharName = TPlayer.PlayerData.charinfo.firstname..' '..TPlayer.PlayerData.charinfo.lastname,
+                Source = TPlayer.PlayerData.source,
+                CitizenId = TPlayer.PlayerData.citizenid
+            }
+        end
         Cb(PlayerInfo)
     end
 end)
@@ -207,7 +217,15 @@ RegisterNetEvent("exter-adminmenu/server/set-money", function(ServerId, MoneyTyp
     if not AdminCheck(src) then return end
     local Source = ServerId ~= nil and ServerId or src
     local TPlayer = QBCore.Functions.GetPlayer(Source)
-    TPlayer.Functions.SetMoney(MoneyType, MoneyAmount, 'Admin-Menu-Set-Money')
+    if not TPlayer then return end
+    local amount = tonumber(MoneyAmount) or 0
+    if Config.Framework == 'esx' then
+        if TPlayer.setAccountMoney then
+            TPlayer.setAccountMoney(MoneyType, amount)
+        end
+    else
+        TPlayer.Functions.SetMoney(MoneyType, amount, 'Admin-Menu-Set-Money')
+    end
 end)
 
 
@@ -216,7 +234,15 @@ RegisterNetEvent("exter-adminmenu/server/give-money", function(ServerId, MoneyTy
     if not AdminCheck(src) then return end
     local Source = ServerId ~= nil and ServerId or src
     local TPlayer = QBCore.Functions.GetPlayer(Source)
-    TPlayer.Functions.AddMoney(MoneyType, MoneyAmount, 'Admin-Menu-Give-Money')
+    if not TPlayer then return end
+    local amount = tonumber(MoneyAmount) or 0
+    if Config.Framework == 'esx' then
+        if TPlayer.addAccountMoney then
+            TPlayer.addAccountMoney(MoneyType, amount)
+        end
+    else
+        TPlayer.Functions.AddMoney(MoneyType, amount, 'Admin-Menu-Give-Money')
+    end
 end)
 
 RegisterNetEvent("exter-adminmenu/server/give-item", function(ServerId, ItemName, ItemAmount)
@@ -224,24 +250,28 @@ RegisterNetEvent("exter-adminmenu/server/give-item", function(ServerId, ItemName
     if not AdminCheck(src) then return end
     local Source = ServerId ~= nil and ServerId or src
     local TPlayer = QBCore.Functions.GetPlayer(Source)
-    TPlayer.Functions.AddItem(ItemName, ItemAmount)
-    print(ItemName)
-    TriggerClientEvent("hasib:additem", ItemName, ItemAmount)
-end)
-
-RegisterNetEvent('jomidar:additem', function(ItemName, ItemAmount)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    Player.Functions.AddItem(item, 1)
-    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[item], "add")
+    if not TPlayer then return end
+    if Config.Framework == 'esx' then
+        if TPlayer.addInventoryItem then
+            TPlayer.addInventoryItem(ItemName, tonumber(ItemAmount) or 1)
+        end
+    else
+        TPlayer.Functions.AddItem(ItemName, tonumber(ItemAmount) or 1)
+    end
+    QBCore.Functions.Notify(src, Lang:t('info.gaveitem', { amount = ItemAmount, name = ItemName }), 'success')
 end)
 RegisterNetEvent("exter-adminmenu/server/request-gang", function(ServerId, GangName)
     local src = source
     if not AdminCheck(src) then return end
     local Source = ServerId ~= nil and ServerId or src
     local TPlayer = QBCore.Functions.GetPlayer(Source)
-    TPlayer.Functions.SetGang(GangName, 1, 'Admin-Menu-Give-Gang')
-    TriggerClientEvent('QBCore:Notify', src, Lang:t('info.setgang', {gangname = GangName}), 'success')
+    if not TPlayer then return end
+    if Config.Framework ~= 'esx' and TPlayer.Functions and TPlayer.Functions.SetGang then
+        TPlayer.Functions.SetGang(GangName, 1, 'Admin-Menu-Give-Gang')
+        QBCore.Functions.Notify(src, Lang:t('info.setgang', {gangname = GangName}), 'success')
+    else
+        QBCore.Functions.Notify(src, 'Gang hanya tersedia untuk QB/Qbox.', 'error')
+    end
 end)
 
 RegisterNetEvent("exter-adminmenu/server/request-job", function(ServerId, JobName)
@@ -249,8 +279,15 @@ RegisterNetEvent("exter-adminmenu/server/request-job", function(ServerId, JobNam
     if not AdminCheck(src) then return end
     local Source = ServerId ~= nil and ServerId or src
     local TPlayer = QBCore.Functions.GetPlayer(Source)
-    TPlayer.Functions.SetJob(JobName, 1, 'Admin-Menu-Give-Job')
-    TriggerClientEvent('QBCore:Notify', src, Lang:t('info.setjob', {jobname = JobName}), 'success')
+    if not TPlayer then return end
+    if Config.Framework == 'esx' then
+        if TPlayer.setJob then
+            TPlayer.setJob(JobName, 1)
+        end
+    else
+        TPlayer.Functions.SetJob(JobName, 1, 'Admin-Menu-Give-Job')
+    end
+    QBCore.Functions.Notify(src, Lang:t('info.setjob', {jobname = JobName}), 'success')
 end)
 
 RegisterNetEvent('exter-adminmenu/server/start-spectate', function(ServerId)

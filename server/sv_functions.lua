@@ -43,9 +43,16 @@ function GetPlayerFromIdentifier(Type, Identifier)
     local Ident = Type ~= nil and Type or 'steam'
     for _, v in pairs(QBCore.Functions.GetPlayers()) do
         local TPlayer = QBCore.Functions.GetPlayer(v)
-        if TPlayer.PlayerData[Ident] == Identifier then
-            Retval = TPlayer
+        if TPlayer then
+            if Config.Framework == 'esx' then
+                if Ident == 'license' and TPlayer.identifier == Identifier then
+                    Retval = TPlayer
+                end
+            elseif TPlayer.PlayerData and TPlayer.PlayerData[Ident] == Identifier then
+                Retval = TPlayer
+            end
         end
+        if Retval then break end
     end
     return Retval
 end
@@ -56,12 +63,16 @@ function CreateLog(Source, Type, Log, Data)
     local Player = QBCore.Functions.GetPlayer(src)
     if Player ~= nil then
         local Steam = QBCore.Functions.GetIdentifier(src, "steam")
-        if Steam == nil then DebugLog('Steam Identifiers not found using Player Name.') Steam = Player.PlayerData.name end
+        local playerName = GetPlayerName(src)
+        if Config.Framework ~= 'esx' and Player.PlayerData and Player.PlayerData.name then
+            playerName = Player.PlayerData.name
+        end
+        if Steam == nil then DebugLog('Steam Identifiers not found using Player Name.') Steam = playerName end
         MySQL.insert('INSERT INTO logs (Type, Steam, Log, Cid, Data) VALUES (?, ?, ?, ?, ?)', {
             Type,
             Steam,
             Log,
-            Player.PlayerData.citizenid,
+            (Config.Framework == 'esx' and Player.identifier) or (Player.PlayerData and Player.PlayerData.citizenid) or 'unknown',
             Data,
         })
     end
@@ -210,6 +221,17 @@ function AdminCheck(ServerId)
     local Player = QBCore.Functions.GetPlayer(ServerId)
     local Prom = promise:new()
     if Player ~= nil then
+        if Config.Framework == 'esx' then
+            local Group = Player.getGroup and Player.getGroup() or 'user'
+            for i = 1, #Config.Settings['AdminGroups'] do
+                if Group == Config.Settings['AdminGroups'][i] then
+                    Prom:resolve(true)
+                    return Citizen.Await(Prom)
+                end
+            end
+            Prom:resolve(false)
+            return Citizen.Await(Prom)
+        end
         local Group = QBCore.Functions.GetPermission(ServerId)
         if type(Group) ~= 'table' then -- Old QB
             for i=1, #Config.Settings['AdminGroups'] do
